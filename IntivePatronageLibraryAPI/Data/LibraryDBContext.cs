@@ -10,9 +10,5 @@ namespace IntivePatronageLibraryAPI.Data
         public DbSet<Book> Books { get; set; }
         public DbSet<Author> Author { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-        }
     }
 }
