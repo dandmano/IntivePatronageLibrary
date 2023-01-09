@@ -27,7 +27,6 @@ namespace IntivePatronageLibraryAPI.Controllers
         // Are we interested in attaching books? I won't attach in lists
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
         {
             return Ok(await _db.Author.ToListAsync());
@@ -38,36 +37,14 @@ namespace IntivePatronageLibraryAPI.Controllers
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthorsByName([FromQuery] AuthorParameters authorParameters)
+        public async Task<ActionResult<IEnumerable<Author>>> GetAuthorsByName([FromQuery] AuthorSearchUnit authorSearchUnit)
         {
-            var result = await authorParameters.SearchAsync(_db);
+            var result = await authorSearchUnit.SearchAuthorAsync(_db);
             if (!result.Any())
             {
                 return NotFound();
             }
             return Ok(result);
-        }
-
-        // NOT REQUIRED read author – GET:  api/authors/3
-        // Are we interested in attaching books? I will attach in single get
-        [HttpGet("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Author>> GetAuthor([FromRoute]int id)
-        {
-            if (id <= 0)
-            {
-                ModelState.AddModelError("", "Id must be greater than 0");
-                return BadRequest(ModelState);
-            }
-            
-            var author = await _db.Author.Where(x=>x.Id==id).Include(x=>x.Books).FirstOrDefaultAsync();
-
-            if (author == null)
-                return NotFound();
-
-            return Ok(author);
         }
 
         // Create an author – POST:  api/authors
@@ -79,20 +56,20 @@ namespace IntivePatronageLibraryAPI.Controllers
         {
             if (author.Id != 0)
             {
-                ModelState.AddModelError("", "Id must be not be included (or with value 0)");
+                ModelState.AddModelError("", "Id must not be included (or with value 0)");
                 return BadRequest(ModelState);
             }
 
             //Check for duplicate in database
-            var ap = new AuthorParameters
+            var ap = new AuthorSearchUnit
             {
                 BirthDate = author.BirthDate,
                 FirstName = author.FirstName,
                 LastName = author.LastName,
                 Gender = author.Gender
             };
-            var duplicate = await ap.SearchAsync(_db);
-            if (duplicate.Any())
+            var duplicates = await ap.SearchAuthorAsync(_db);
+            if (duplicates.Any())
                 return Conflict("Author with given name and birthdate exists in database");
 
             _db.Author.Add(author);
@@ -103,11 +80,15 @@ namespace IntivePatronageLibraryAPI.Controllers
 
         // Delete an author – DELETE:  api/authors/3
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAuthor(int id)
         {
             if (id <= 0)
             {
-                return BadRequest();
+                ModelState.AddModelError("","Id must be greater than 0");
+                return BadRequest(ModelState);
             }
 
             var author = await _db.Author.FindAsync(id);
@@ -122,13 +103,41 @@ namespace IntivePatronageLibraryAPI.Controllers
             return NoContent();
         }
 
-        // Assign book to author - POST: api/authors/3/books dev purposes
+        // Not required endpoints ---
+
+        // read author – GET:  api/authors/3
+        // Are we interested in attaching books? I will attach in single get
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<Author>> GetAuthor([FromRoute] int id)
+        {
+            if (id <= 0)
+            {
+                ModelState.AddModelError("", "Id must be greater than 0");
+                return BadRequest(ModelState);
+            }
+
+            var author = await _db.Author.Where(x => x.Id == id).Include(x => x.Books).FirstOrDefaultAsync();
+
+            if (author == null)
+                return NotFound();
+
+            return Ok(author);
+        }
+
+        // Assign book to author - POST: api/authors/3/books
         [HttpPost("{id}/books")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AuthorAssignBook(int id, [FromBody]int bookId)
         {
             if (id <= 0 || bookId <=0)
             {
-                return BadRequest();
+                ModelState.AddModelError("","Both ids are required to be grater than 0");
+                return BadRequest(ModelState);
             }
 
             var authorTask = _db.Author.FindAsync(id);
