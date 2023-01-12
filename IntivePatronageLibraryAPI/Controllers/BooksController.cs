@@ -26,15 +26,15 @@ namespace IntivePatronageLibraryAPI.Controllers
         // Read all books – GET: api/books
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
+        public async Task<ActionResult<IEnumerable<Book>>> GetBooks([FromQuery]bool withAuthors)
         {
-            return Ok(await _db.Books.ToListAsync());
+            return withAuthors? Ok(await _db.Books.Include(x=>x.Authors).ToListAsync()) : Ok(await _db.Books.ToListAsync());
         }
 
         // Update a book – PUT: api/books/5
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> PutBook(int id, Book book)
         {
             if (id != book.Id)
@@ -89,7 +89,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         }
 
         // Delete a book – DELETE: api/books/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -117,11 +117,10 @@ namespace IntivePatronageLibraryAPI.Controllers
         // Search book – GET: api/books/search?title=sometitle&firstname=somename
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Book>> GetBooks([FromQuery] BookSearchUnit bookSearchUnit)
+        public async Task<ActionResult<Book>> GetBooks([FromQuery] BookQueryObject bookQueryObject)
         {
-            var result = await bookSearchUnit.SearchBookAuthorAsync(_db);
+            var result = await bookQueryObject.SearchBookAuthorAsync();
             if (!result.Any())
             {
                 return NotFound();
@@ -132,7 +131,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         // Not required endpoints ---
 
         // GET: api/books/5
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

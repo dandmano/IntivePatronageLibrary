@@ -14,6 +14,6 @@ namespace IntivePatronageLibraryAPI.Models
         //Gender True - Man, False - Woman
         [Required] public bool Gender { get; set; }
 
-        public List<Book> Books { get; } = new();
+        public virtual List<Book> Books { get; } = new();
     }
 }

@@ -11,6 +11,6 @@ namespace IntivePatronageLibraryAPI.Models
         [Required] [MaxLength(13)] public string ISBN { get; set; }
         [Required] public DateTime PublicationDate { get; set; }
 
-        public List<Author> Authors { get; } = new();
+        public virtual List<Author> Authors { get; } = new();
     }
 }

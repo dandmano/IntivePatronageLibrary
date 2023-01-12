@@ -27,9 +27,9 @@ namespace IntivePatronageLibraryAPI.Controllers
         // Are we interested in attaching books? I won't attach in lists
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
+        public async Task<ActionResult<IEnumerable<Author>>> GetAuthors([FromQuery]bool withBooks)
         {
-            return Ok(await _db.Author.ToListAsync());
+            return withBooks ? Ok(await _db.Author.Include(x=>x.Books).ToListAsync()) : Ok(await _db.Author.ToListAsync());
         }
 
         // Read all authors – GET: api/authors/search
@@ -37,9 +37,9 @@ namespace IntivePatronageLibraryAPI.Controllers
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthorsByName([FromQuery] AuthorSearchUnit authorSearchUnit)
+        public async Task<ActionResult<IEnumerable<Author>>> GetAuthorsByName([FromQuery] AuthorQueryObject authorQueryObject)
         {
-            var result = await authorSearchUnit.SearchAuthorAsync(_db);
+            var result = await authorQueryObject.SearchAuthorAsync();
             if (!result.Any())
             {
                 return NotFound();
@@ -61,14 +61,14 @@ namespace IntivePatronageLibraryAPI.Controllers
             }
 
             //Check for duplicate in database
-            var ap = new AuthorSearchUnit
+            var ap = new AuthorQueryObject
             {
                 BirthDate = author.BirthDate,
                 FirstName = author.FirstName,
                 LastName = author.LastName,
                 Gender = author.Gender
             };
-            var duplicates = await ap.SearchAuthorAsync(_db);
+            var duplicates = await ap.SearchAuthorAsync();
             if (duplicates.Any())
                 return Conflict("Author with given name and birthdate exists in database");
 
@@ -79,7 +79,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         }
 
         // Delete an author – DELETE:  api/authors/3
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -107,7 +107,7 @@ namespace IntivePatronageLibraryAPI.Controllers
 
         // read author – GET:  api/authors/3
         // Are we interested in attaching books? I will attach in single get
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -128,8 +128,8 @@ namespace IntivePatronageLibraryAPI.Controllers
         }
 
         // Assign book to author - POST: api/authors/3/books
-        [HttpPost("{id}/books")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpPost("{id:int}/books")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AuthorAssignBook(int id, [FromBody]int bookId)
@@ -140,11 +140,9 @@ namespace IntivePatronageLibraryAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var authorTask = _db.Author.FindAsync(id);
-            var bookTask = _db.Books.FindAsync(bookId);
+            var author = await _db.Author.Where(x => x.Id == id).Include(x => x.Books).FirstOrDefaultAsync();
+            var book = await _db.Books.FindAsync(bookId);
 
-            var author = await authorTask;
-            var book = await bookTask;
             if ( author == null || book == null)
             {
                 return NotFound();
@@ -152,7 +150,9 @@ namespace IntivePatronageLibraryAPI.Controllers
 
             author.Books.Add(book);
 
-            return CreatedAtAction("GetAuthor", new { id = id }, author);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction("GetAuthor", new { id }, author);
         }
     }
 }
