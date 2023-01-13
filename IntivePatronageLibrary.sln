@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntivePatronageLibraryAPI", "IntivePatronageLibraryAPI\IntivePatronageLibraryAPI.csproj", "{F260B8E0-8681-4EDA-B569-64B46953E46F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntivePatronageLibraryAPI", "IntivePatronageLibraryAPI\IntivePatronageLibraryAPI.csproj", "{F260B8E0-8681-4EDA-B569-64B46953E46F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntivePatronageLibraryCORE", "IntivePatronageLibraryCORE\IntivePatronageLibraryCORE.csproj", "{4E024F44-DA8F-45E6-8792-E8B46D1FDB6A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntivePatronageLibrarySERVICES", "IntivePatronageLibrarySERVICES\IntivePatronageLibrarySERVICES.csproj", "{9CB5C4E8-75E1-4E71-9F80-D62335FC1F3B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntivePatronageLibraryDATA", "IntivePatronageLibraryDATA\IntivePatronageLibraryDATA.csproj", "{2BDDADC7-BB4B-4BE2-AD33-185EE6FDA90B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{F260B8E0-8681-4EDA-B569-64B46953E46F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F260B8E0-8681-4EDA-B569-64B46953E46F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F260B8E0-8681-4EDA-B569-64B46953E46F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E024F44-DA8F-45E6-8792-E8B46D1FDB6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E024F44-DA8F-45E6-8792-E8B46D1FDB6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E024F44-DA8F-45E6-8792-E8B46D1FDB6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E024F44-DA8F-45E6-8792-E8B46D1FDB6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CB5C4E8-75E1-4E71-9F80-D62335FC1F3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CB5C4E8-75E1-4E71-9F80-D62335FC1F3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CB5C4E8-75E1-4E71-9F80-D62335FC1F3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CB5C4E8-75E1-4E71-9F80-D62335FC1F3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BDDADC7-BB4B-4BE2-AD33-185EE6FDA90B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BDDADC7-BB4B-4BE2-AD33-185EE6FDA90B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BDDADC7-BB4B-4BE2-AD33-185EE6FDA90B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BDDADC7-BB4B-4BE2-AD33-185EE6FDA90B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
