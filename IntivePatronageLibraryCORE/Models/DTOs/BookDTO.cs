@@ -11,6 +11,6 @@ namespace IntivePatronageLibraryCORE.Models.DTOs
         [Required] [MaxLength(13)] public string ISBN { get; set; }
         [Required] public DateTime PublicationDate { get; set; }
 
-        public virtual List<AuthorDTO> Authors { get; set; } = new();
+        public virtual List<AuthorDTO> Authors { get; } = new();
     }
 }

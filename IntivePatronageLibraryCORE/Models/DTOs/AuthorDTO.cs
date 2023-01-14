@@ -13,6 +13,6 @@ namespace IntivePatronageLibraryCORE.Models.DTOs
         //Gender True - Man, False - Woman
         [Required] public bool Gender { get; set; }
 
-        public virtual List<BookDTO> Books { get; set; } = new();
+        public virtual List<BookDTO> Books { get; } = new();
     }
 }

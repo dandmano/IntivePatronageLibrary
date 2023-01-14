@@ -27,6 +27,11 @@ namespace IntivePatronageLibrarySERVICES
             return await _unitOfWork.Books.GetByIdAsync(id);
         }
 
+        public async Task<Book?> GetWithAuthorsById(int id)
+        {
+            return await _unitOfWork.Books.GetWithAuthorsByIdAsync(id);
+        }
+
         public async Task<Book> AddBook(Book newBook)
         {
             await _unitOfWork.Books.AddAsync(newBook);

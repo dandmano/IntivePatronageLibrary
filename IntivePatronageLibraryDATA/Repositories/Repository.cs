@@ -24,7 +24,8 @@ namespace IntivePatronageLibraryDATA.Repositories
 
         public async Task<IEnumerable<TEntity>> GetAllAsync()
         {
-            return await Db.Set<TEntity>().ToListAsync();
+            var authors = await Db.Set<TEntity>().ToListAsync();
+            return authors;
         }
 
         public ValueTask<TEntity?> GetByIdAsync(int id)

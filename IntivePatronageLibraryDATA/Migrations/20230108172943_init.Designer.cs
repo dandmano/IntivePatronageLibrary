@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace IntivePatronageLibraryAPI.Migrations
+namespace IntivePatronageLibraryDATA.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
     [Migration("20230108172943_init")]

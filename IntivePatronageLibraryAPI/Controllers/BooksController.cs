@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using IntivePatronageLibraryCORE.Models;
+using IntivePatronageLibraryCORE.Models.DTOs;
+using IntivePatronageLibraryCORE.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using IntivePatronageLibraryAPI.Data;
-using IntivePatronageLibraryAPI.Models;
+
 
 namespace IntivePatronageLibraryAPI.Controllers
 {
@@ -16,31 +14,44 @@ namespace IntivePatronageLibraryAPI.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private readonly LibraryDbContext _db;
+        private readonly IBookService _bookService;
+        private readonly IMapper _mapper;
 
-        public BooksController(LibraryDbContext db)
+        public BooksController(IBookService bookService, IMapper iMapper)
         {
-            _db = db;
+            _bookService = bookService;
+            _mapper= iMapper;
         }
 
         // Read all books – GET: api/books
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<Book>>> GetBooks([FromQuery]bool withAuthors)
+        public async Task<ActionResult<IEnumerable<BookDTO>>> GetBooks([FromQuery]bool withAuthors)
         {
-            return withAuthors? Ok(await _db.Books.Include(x=>x.Authors).ToListAsync()) : Ok(await _db.Books.ToListAsync());
+            if (withAuthors)
+            {
+                var books = await _bookService.GetAllWithAuthors();
+                var booksDto = _mapper.Map<IEnumerable<Book>, List<BookDTO>>(books);
+                return Ok(booksDto);
+            }
+            else
+            {
+                var books = await _bookService.GetAll();
+                var booksDto = _mapper.Map<IEnumerable<Book>, List<BookDTO>>(books);
+                return Ok(booksDto);
+            }
         }
 
         // Update a book – PUT: api/books/5
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> PutBook(int id, Book book)
+        public async Task<IActionResult> PutBook(int id, BookDTO bookDto)
         {
-            if (id != book.Id)
+            if (id != bookDto.Id)
             {
-                if (book.Id == 0)
-                    book.Id = id;
+                if (bookDto.Id == 0)
+                    bookDto.Id = id;
                 else
                 {
                     ModelState.AddModelError("", "Id cannot be changed!");
@@ -48,22 +59,13 @@ namespace IntivePatronageLibraryAPI.Controllers
                 }
             }
 
-            _db.Entry(book).State = EntityState.Modified;
+            var bookToUpdate = await _bookService.GetBookById(id);
 
-            try
-            {
-                await _db.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // book does not exists
-                if (!(_db.Books?.Any(e => e.Id == id)).GetValueOrDefault())
-                {
-                    return NotFound();
-                }
+            if (bookToUpdate == null)
+                return BadRequest();
 
-                throw;
-            }
+            var book = _mapper.Map<Book>(bookDto);
+            await _bookService.UpdateBook(bookToUpdate, book);
 
             return NoContent();
         }
@@ -72,20 +74,19 @@ namespace IntivePatronageLibraryAPI.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<Book>> PostBook(Book book)
+        public async Task<ActionResult<BookDTO>> PostBook(BookDTO bookDto)
         {
-            if (book.Id != 0)
+            if (bookDto.Id != 0)
             {
                 ModelState.AddModelError("", "Id must not be included (or with value 0)");
                 return BadRequest(ModelState);
             }
 
-            // I assume we accept duplicate books
+            var book = _mapper.Map<Book>(bookDto);
+            book = await _bookService.AddBook(book);
+            bookDto.Id=book.Id;
 
-            _db.Books.Add(book);
-            await _db.SaveChangesAsync();
-
-            return CreatedAtAction("GetBook", new { id = book.Id }, book);
+            return CreatedAtAction("GetBook", new { id = bookDto.Id }, bookDto);
         }
 
         // Delete a book – DELETE: api/books/5
@@ -102,31 +103,30 @@ namespace IntivePatronageLibraryAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var book = await _db.Books.FindAsync(id);
+            var book = await _bookService.GetBookById(id);
             if (book == null)
             {
                 return NotFound();
             }
 
-            _db.Books.Remove(book);
-            await _db.SaveChangesAsync();
+            await _bookService.DeleteBook(book);
 
             return NoContent();
         }
 
-        // Search book – GET: api/books/search?title=sometitle&firstname=somename
-        [HttpGet("search")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Book>> GetBooks([FromQuery] BookQueryObject bookQueryObject)
-        {
-            var result = await bookQueryObject.SearchBookAuthorAsync();
-            if (!result.Any())
-            {
-                return NotFound();
-            }
-            return Ok(result);
-        }
+        // // Search book – GET: api/books/search?title=sometitle&firstname=somename
+        // [HttpGet("search")]
+        // [ProducesResponseType(StatusCodes.Status200OK)]
+        // [ProducesResponseType(StatusCodes.Status404NotFound)]
+        // public async Task<ActionResult<Book>> GetBooks([FromQuery] BookQueryObject bookQueryObject)
+        // {
+        //     var result = await bookQueryObject.SearchBookAuthorAsync();
+        //     if (!result.Any())
+        //     {
+        //         return NotFound();
+        //     }
+        //     return Ok(result);
+        // }
 
         // Not required endpoints ---
 
@@ -135,7 +135,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Book>> GetBook(int id)
+        public async Task<ActionResult<BookDTO>> GetBook(int id)
         {
             if (id <= 0)
             {
@@ -143,14 +143,14 @@ namespace IntivePatronageLibraryAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var book = await _db.Books.FindAsync(id);
+            var book = await _bookService.GetWithAuthorsById(id);
 
             if (book == null)
-            {
                 return NotFound();
-            }
 
-            return Ok(book);
+            var bookDto = _mapper.Map<Book>(book);
+
+            return Ok(bookDto);
         }
     }
 }
