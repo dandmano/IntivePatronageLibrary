@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using IntivePatronageLibraryCORE;
 using IntivePatronageLibraryCORE.Models;
 using IntivePatronageLibraryCORE.Models.DTOs;
+using IntivePatronageLibraryCORE.Models.QueryObjects;
 using IntivePatronageLibraryCORE.Services;
+using Newtonsoft.Json;
 
 
 namespace IntivePatronageLibraryAPI.Controllers
@@ -19,44 +21,29 @@ namespace IntivePatronageLibraryAPI.Controllers
 
         public AuthorsController(IAuthorService authorService, IMapper iMapper)
         {
-            _authorService= authorService;
-            _mapper= iMapper;
+            _authorService = authorService;
+            _mapper = iMapper;
         }
 
         // Read all authors – GET: api/authors
-        // Are we interested in attaching books? I won't attach in lists
+        // Search, sorting, paging included
+        // for example: api/authors?orderBy=lastname desc, firstname&pageNumber=1&pageSize=3&firstname=Jan
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<AuthorDTO>>> GetAuthors([FromQuery]bool withBooks)
+        public async Task<ActionResult<PagedList<AuthorDTO>>> GetAuthors([FromQuery] bool withBooks,
+            [FromQuery] AuthorQueryParameters authorParams)
         {
+            PagedList<Author> authors;
             if (withBooks)
-            {
-                var authors = await _authorService.GetAllWithBooks();
-                var authorsDto = _mapper.Map<IEnumerable<Author>, List<AuthorDTO>>(authors);
-                return Ok(authorsDto);
-            }
+                authors = await _authorService.GetAllWithBooks(authorParams);
             else
-            {
-                var authors = await _authorService.GetAll();
-                var authorsDto = _mapper.Map<IEnumerable<Author>, List<AuthorDTO>>(authors);
-                return Ok(authorsDto);
-            }
-        }
+                authors = await _authorService.GetAll(authorParams);
 
-        // Read all authors – GET: api/authors/search
-        // Are we interested in attaching books? I won't attach in lists
-        // [HttpGet("search")]
-        // [ProducesResponseType(StatusCodes.Status200OK)]
-        // [ProducesResponseType(StatusCodes.Status404NotFound)]
-        // public async Task<ActionResult<IEnumerable<Author>>> GetAuthorsByName([FromQuery] AuthorQueryObject authorQueryObject)
-        // {
-        //     var result = await authorQueryObject.SearchAuthorAsync();
-        //     if (!result.Any())
-        //     {
-        //         return NotFound();
-        //     }
-        //     return Ok(result);
-        // }
+            var metadata = GetMetadata(authors);
+            Response.Headers.Add("Pagination", JsonConvert.SerializeObject(metadata));
+            var authorsDto = _mapper.Map<IEnumerable<Author>, List<AuthorDTO>>(authors);
+            return Ok(authorsDto);
+        }
 
         // Create an authorDto – POST:  api/authors
         [HttpPost]
@@ -65,10 +52,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         public async Task<ActionResult<AuthorDTO>> PostAuthor(AuthorDTO authorDto)
         {
             if (authorDto.Id != 0)
-            {
-                ModelState.AddModelError("", "Id must not be included (or with value 0)");
-                return BadRequest(ModelState);
-            }
+                return BadRequest();
 
             var author = _mapper.Map<Author>(authorDto);
             author = await _authorService.AddAuthor(author);
@@ -85,16 +69,12 @@ namespace IntivePatronageLibraryAPI.Controllers
         public async Task<IActionResult> DeleteAuthor(int id)
         {
             if (id <= 0)
-            {
-                ModelState.AddModelError("","Id must be greater than 0");
-                return BadRequest(ModelState);
-            }
+                return BadRequest();
 
             var author = await _authorService.GetAuthorById(id);
+
             if (author == null)
-            {
                 return NotFound();
-            }
 
             await _authorService.DeleteAuthor(author);
 
@@ -112,10 +92,7 @@ namespace IntivePatronageLibraryAPI.Controllers
         public async Task<ActionResult<AuthorDTO>> GetAuthor([FromRoute] int id)
         {
             if (id <= 0)
-            {
-                ModelState.AddModelError("", "Id must be greater than 0");
-                return BadRequest(ModelState);
-            }
+                return BadRequest();
 
             var author = await _authorService.GetWithBooksById(id);
 
@@ -132,17 +109,27 @@ namespace IntivePatronageLibraryAPI.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> AuthorAssignBook(int id, [FromBody]int bookId)
+        public async Task<IActionResult> AuthorAssignBook(int id, [FromBody] int bookId)
         {
-            if (id <= 0 || bookId <=0)
-            {
-                ModelState.AddModelError("","Both ids are required to be grater than 0");
-                return BadRequest(ModelState);
-            }
+            if (id <= 0 || bookId <= 0)
+                return BadRequest();
 
             var author = await _authorService.AddBookToAuthor(id, bookId);
 
             return CreatedAtAction("GetAuthor", new { id }, author);
+        }
+
+        private static object GetMetadata(PagedList<Author> pagelist)
+        {
+            return new
+            {
+                pagelist.TotalCount,
+                pagelist.PageSize,
+                pagelist.CurrentPage,
+                pagelist.TotalPages,
+                pagelist.HasNext,
+                pagelist.HasPrevious
+            };
         }
     }
 }

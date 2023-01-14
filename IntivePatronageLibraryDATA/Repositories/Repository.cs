@@ -22,10 +22,9 @@ namespace IntivePatronageLibraryDATA.Repositories
             return Db.Set<TEntity>().Where(predicate);
         }
 
-        public async Task<IEnumerable<TEntity>> GetAllAsync()
+        public IQueryable<TEntity> FindAll()
         {
-            var authors = await Db.Set<TEntity>().ToListAsync();
-            return authors;
+            return Db.Set<TEntity>();
         }
 
         public ValueTask<TEntity?> GetByIdAsync(int id)

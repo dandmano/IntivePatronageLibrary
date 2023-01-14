@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Text;
 using System.Linq.Dynamic.Core;
+using IntivePatronageLibraryCORE;
+using IntivePatronageLibraryCORE.Models.QueryObjects;
 
 namespace IntivePatronageLibraryDATA.Repositories
 {
@@ -13,9 +15,24 @@ namespace IntivePatronageLibraryDATA.Repositories
         {
         }
 
-        public async Task<IEnumerable<Book>> GetAllWithAuthorsAsync()
+        public async Task<PagedList<Book>> GetAllAsync(BookQueryParameters bookParams)
         {
-            return await LibraryDbContext.Books.Include(b => b.Authors).ToListAsync();
+            var books = FindAll();
+
+            SearchWithParams(ref books, bookParams);
+            ApplySort(ref books, bookParams.OrderBy);
+
+            return await PagedList<Book>.ToPagedListAsync(books, bookParams.PageNumber, bookParams.PageSize);
+        }
+
+        public async Task<PagedList<Book>> GetAllWithAuthorsAsync(BookQueryParameters bookParams)
+        {
+            var books = FindAll().Include(x=>x.Authors) as IQueryable<Book>;
+
+            SearchWithParams(ref books, bookParams);
+            ApplySort(ref books, bookParams.OrderBy);
+
+            return await PagedList<Book>.ToPagedListAsync(books, bookParams.PageNumber, bookParams.PageSize);
         }
 
         public async Task<Book?> GetWithAuthorsByIdAsync(int id)
@@ -25,6 +42,26 @@ namespace IntivePatronageLibraryDATA.Repositories
 
         private LibraryDbContext LibraryDbContext => (Db as LibraryDbContext)!;
 
+        private void SearchWithParams(ref IQueryable<Book> books, BookQueryParameters bookParams)
+        {
+            if (bookParams.Title != null)
+                books = books.Where(x => x.Title.ToLower() == bookParams.Title.ToLower());
+            if (bookParams.Description != null)
+                books = books.Where(x => x.Description.ToLower() == bookParams.Description.ToLower());
+            if (bookParams.Rating != null)
+                books = books.Where(x => x.Rating == bookParams.Rating);
+            if (bookParams.Rating_from != null && bookParams.Rating_to != null)
+                books = books.Where(x => x.Rating <= bookParams.Rating_to && x.Rating >= bookParams.Rating_from);
+            else if (bookParams.Rating_from != null)
+                books = books.Where(x => x.Rating >= bookParams.Rating_from);
+            else if (bookParams.Rating_to != null)
+                books = books.Where(x => x.Rating <= bookParams.Rating_to);
+            if (bookParams.ISBN != null)
+                books = books.Where(x => x.ISBN.ToLower() == bookParams.ISBN.ToLower());
+            if (bookParams.PublicationDate != null)
+                books = books.Where(x => x.PublicationDate.Equals(bookParams.PublicationDate));
+        }
+
         //From code-maze tutorial
         private void ApplySort(ref IQueryable<Book> books, string orderByQueryString)
         {
@@ -32,7 +69,7 @@ namespace IntivePatronageLibraryDATA.Repositories
                 return;
             if (string.IsNullOrWhiteSpace(orderByQueryString))
             {
-                books = books.OrderBy(x => x.Title);
+                books = books.OrderBy(x => x.Id);
                 return;
             }
             var orderParams = orderByQueryString.Trim().Split(',');
@@ -52,7 +89,7 @@ namespace IntivePatronageLibraryDATA.Repositories
             var orderQuery = orderQueryBuilder.ToString().TrimEnd(',', ' ');
             if (string.IsNullOrWhiteSpace(orderQuery))
             {
-                books = books.OrderBy(x => x.Title);
+                books = books.OrderBy(x => x.Id);
                 return;
             }
             books = books.OrderBy(orderQuery);

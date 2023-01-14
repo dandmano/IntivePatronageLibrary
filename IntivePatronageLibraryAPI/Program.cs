@@ -1,8 +1,10 @@
-﻿using IntivePatronageLibraryAPI.Mapping;
+﻿using System.Net.Mime;
+using IntivePatronageLibraryAPI.Mapping;
 using IntivePatronageLibraryCORE;
 using IntivePatronageLibraryCORE.Services;
 using IntivePatronageLibraryDATA;
 using IntivePatronageLibrarySERVICES;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using LibraryDbContext = IntivePatronageLibraryDATA.LibraryDbContext;
 
@@ -29,6 +31,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -37,6 +40,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseExceptionHandler("/error");
 
 app.UseAuthorization();
 

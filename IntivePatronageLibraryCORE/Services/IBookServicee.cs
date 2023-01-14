@@ -1,11 +1,12 @@
 ﻿using IntivePatronageLibraryCORE.Models;
+using IntivePatronageLibraryCORE.Models.QueryObjects;
 
 namespace IntivePatronageLibraryCORE.Services
 {
     public interface IBookService
     {
-        Task<IEnumerable<Book>> GetAllWithAuthors();
-        Task<IEnumerable<Book>> GetAll();
+        Task<PagedList<Book>> GetAllWithAuthors(BookQueryParameters bookParams);
+        Task<PagedList<Book>> GetAll(BookQueryParameters bookParams);
         Task<Book?> GetBookById(int id);
         Task<Book?> GetWithAuthorsById(int id);
         Task<Book> AddBook(Book newBook);

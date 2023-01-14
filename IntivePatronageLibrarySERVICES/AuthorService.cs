@@ -1,5 +1,6 @@
 ﻿using IntivePatronageLibraryCORE;
 using IntivePatronageLibraryCORE.Models;
+using IntivePatronageLibraryCORE.Models.QueryObjects;
 using IntivePatronageLibraryCORE.Services;
 
 namespace IntivePatronageLibrarySERVICES
@@ -12,14 +13,14 @@ namespace IntivePatronageLibrarySERVICES
         {
             this._unitOfWork=unitOfWork;
         }
-        public async Task<IEnumerable<Author>> GetAllWithBooks()
+        public async Task<PagedList<Author>> GetAllWithBooks(AuthorQueryParameters authorParams)
         {
-            return await _unitOfWork.Authors.GetAllWithBooksAsync();
+            return await _unitOfWork.Authors.GetAllWithBooksAsync(authorParams);
         }
 
-        public async Task<IEnumerable<Author>> GetAll()
+        public async Task<PagedList<Author>> GetAll(AuthorQueryParameters authorParams)
         {
-            return await _unitOfWork.Authors.GetAllAsync();
+            return await _unitOfWork.Authors.GetAllAsync(authorParams);
         }
 
         public async Task<Author?> GetAuthorById(int id)
